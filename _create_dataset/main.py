@@ -1,0 +1,7 @@
+from img2dist import *
+import matplotlib.pyplot as plt
+
+
+
+if __name__ == '__main__':
+    pass
