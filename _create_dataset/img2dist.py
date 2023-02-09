@@ -51,3 +51,34 @@ class MakeSpiral:
         return np.concatenate((xa,xb))
     def __call__(self):
         return self.makeit()
+
+class MultiGaussian_GT:
+    """
+    Only serves as the labels of Gaussian
+    """
+    def __init__(self, batch_size=512, N_modality=8):
+        self.batch_size = batch_size
+        self.modality = N_modality
+    def makeit(self):
+        theta = np.linspace(0, 2*np.pi, self.modality)
+        xs, ys = 1.0*np.sin(theta), 1.0*np.cos(theta) 
+        return torch.tensor([xs,ys]).T
+class MultiVariateGaussian:
+    def __init__(self, batch_size = 512, N_modality=8):
+        self.batch_size = batch_size
+        self.modality = N_modality
+        self.std = 0.02
+    def makeCenter(self):
+        theta = np.linspace(0, 2*np.pi, self.modality)
+        xs, ys = 1.0*np.sin(theta), 1.0*np.cos(theta) 
+        return xs,ys
+    def makeIt(self):
+        ls = []
+        i_center = np.random.choice(self.modality, self.batch_size)
+        xs,ys = self.makeCenter()
+        center = np.concatenate([xs[:,None], ys[:,None]], 1)
+        sample_points = np.random.normal(loc=center[i_center, :], scale=self.std)
+        ls.append(sample_points)
+        return torch.tensor(np.array(ls)).squeeze()
+
+
