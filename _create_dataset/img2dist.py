@@ -36,6 +36,8 @@ class MakeDist:
 class MakeSpiral:
     """
     Enter number of datapoints, return 2 spiral as tuple
+    Output:
+        [2*batch_size, 2]
     """
     def __init__(self, N=400):
         self.N = N
@@ -48,9 +50,7 @@ class MakeSpiral:
         xa = data_a + np.random.randn(self.N,2)
         xb = data_b + np.random.randn(self.N,2)
         #return xa,xb
-        return np.concatenate((xa,xb))
-    def __call__(self):
-        return self.makeit()
+        return torch.tensor(np.concatenate((xa,xb)))
 
 class MultiGaussian_GT:
     """
