@@ -5,12 +5,13 @@ import seaborn
 import torch.optim as optim
 import matplotlib.pyplot as plt
 from img2dist import MultiVariateGaussian
+from tqdm import tqdm
 
 param = {'batch_size':512,
         'latent_dim':256,
         #'lr':5e-4,
-        'd_lr':1e-4,
-        'g_lr':1e-3,
+        'd_lr':5e-4,
+        'g_lr':5e-4,
         'iters':3000,
         'model':'Small' # 'Large' or 'Small'
         }
@@ -53,7 +54,7 @@ def plot_scatter(target, memo=''):
 
 def noise_sampler(batch_size, z_dim=2):
     """
-    Generate Gaussian noise with shape of [batch ,2]
+    Generate Gaussian noise with shape of [batch ,2] from N(0,1)
     """
     return np.random.normal(size=[batch_size, z_dim]).astype('float32')
 
@@ -65,18 +66,27 @@ target_y = sample.cuda().float()
 # TODO:
 # - [x] data dimension does not match 
 Gnet = lambda: nn.Sequential(nn.Linear(256,128),
-                             nn.Tanh(),
+                             nn.BatchNorm1d(128),
+                             nn.LeakyReLU(),
                              nn.Linear(128,128),
-                             nn.Tanh(),
+                             nn.BatchNorm1d(128),
+                             nn.LeakyReLU(),
                              nn.Linear(128,2)
                             )
 Dnet = lambda: nn.Sequential(nn.Linear(2,128),
-                             nn.ReLU(),
-                             nn.Linear(128,128),
-                             nn.ReLU(),
+                             nn.BatchNorm1d(128),
+                             nn.Tanh(),
+                             nn.Linear(128,256),
+                             nn.BatchNorm1d(256),
+                             nn.Tanh(),
+                             nn.Linear(256,128),
+                             nn.BatchNorm1d(128),
+                             nn.Tanh(),
                              nn.Linear(128,1),
                              nn.Sigmoid()
                             )
+#G = torch.jit.script(Gnet().cuda())
+#D = torch.jit.script(Dnet().cuda())
 G = Gnet().cuda()
 D = Dnet().cuda()
 
@@ -86,10 +96,12 @@ g_loss = nn.BCELoss()
 d_optimizer = optim.Adam(G.parameters(), lr = param['g_lr'], betas = (.5, .999)) 
 g_optimizer = optim.Adam(D.parameters(), lr = param['d_lr'], betas = (.5, .999)) 
 
+d_loss_ls = []
+g_loss_ls = []
 # TODO:
 # - [ ] unrolled GAN with D being able to load weights after k steps of iteration, without G updatesu
 # - [ ] sGAN even diverge, D loss explodes
-for i in range(param['iters']):
+for i in tqdm(range(param['iters'])):
 
     """
     D updates
@@ -104,9 +116,11 @@ for i in range(param['iters']):
         din_g_fake = G(sample_x)
     d_fake = D(din_g_fake)
     d_fake_error = d_loss(d_fake, fake)
-    D_LOSS = d_real_error + d_fake_error
+    D_LOSS = d_real_error + d_fake_error # minimizing -E_{x~real}log(D(x)) + E_{z~fake}log[1 - D(G(z))]
     D_LOSS.backward()
     d_optimizer.step()
+
+    d_loss_ls.append(D_LOSS.item())
     """
     G updates
     """
@@ -114,14 +128,22 @@ for i in range(param['iters']):
     sample_x = torch.tensor(noise_sampler(param['batch_size'], param['latent_dim']), dtype=torch.float32).cuda()
     g_fake = G(sample_x)
     dg_fake = D(g_fake)
-    g_error = g_loss(dg_fake, real)
+    g_error = g_loss(dg_fake, real) # minimizing -E_{z~fake}log[D(G(z))]
     g_error.backward()
     g_optimizer.step()
-    print(f"D loss:{D_LOSS.item():.3f}\tG loss:{g_error.item():.3f}")
+
+    g_loss_ls.append(g_error.item())
+    #print(f"D loss:{D_LOSS.item():.3f}\tG loss:{g_error.item():.3f}")
     #plot_scatter(target_y.squeeze().detach().cpu())
-    if not i%100:
+    """
+    if not i%1000:
         #plot_fn(target_y.squeeze().detach().cpu(), g_fake.squeeze().detach().cpu())
         with torch.no_grad():
             g_fake_infer = G(sample_x) 
         plot_scatter(g_fake_infer.squeeze().cpu())
-    
+    """
+plt.figure()
+plt.plot(d_loss_ls,color='r',label='D') 
+plt.plot(g_loss_ls,color='blue',label='G') 
+plt.legend()
+plt.show()

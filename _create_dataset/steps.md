@@ -30,14 +30,14 @@ A repository of making toy datasets for more generative models to be validated. 
     * depends whether the inputs are expected to be updated(e.g. score-matching function that updates the diffusion tensors)
 2. Is KL divergence better than MSE?
     * KL divergence easily faces vanishing gradient(remember to put inputs in log space)  
-    ![KL result, loss=-0.879](KL.png)
+    ![KL result, loss=-0.879](./figs/KL.png)
 
     * MSE tends to move to convergence, but very slow  
-    ![MSE result, loss=0.007](MSE.png)
+    ![MSE result, loss=0.007](./figs/MSE.png)
 
     * Mixing the above two  
-    ![MIX result, loss=0.067](mix.png)
+    ![MIX result, loss=0.067](./figs/mix.png)
 3. Additional force to push two distribution to overlap?
-    * It's observed from applying negative log-likelihood(NLL) and KL divergence seperatedly, that only applying NLL to measure the reconstruction loss tends to generate more fuzzy distribution than KL, which forces the details of the distribution to match.
+    * It's observed from applying negative log-likelihood(NLL) and KL divergence separately, that only applying NLL to measure the reconstruction loss tends to generate more fuzzy distribution than KL, which forces the details of the distribution to match.
 
 4. Autoencoder seems already work better than a GAN, given same level of parameterization?
