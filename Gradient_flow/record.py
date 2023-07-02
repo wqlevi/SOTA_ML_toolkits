@@ -1,4 +1,4 @@
-
+def record_grad(model.named_parameters):
     '''
     Usage: Plug this function in Trainer class after loss.backwards() as 
     "plot_grad_flow(self.model.named_parameters())" to visualize the gradient flow
